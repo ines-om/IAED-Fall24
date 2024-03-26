@@ -43,7 +43,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     float regimeHoras=0;
     float regimeDiario=0;
 
-    /* Pre-condições */
+    /* Pré-condições */
 
     /* Validar nome do parque */
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), nome )!=0) i++;
@@ -51,6 +51,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
         printf("%s: parking already exists. \n", nome);
         return;
     }
+
     /* Validar se a capacidade de parques nÃ£o foi excedida*/
     if (i >= MAXPARQUES) {
         printf("too many parks.\n");
@@ -80,7 +81,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     }
 
 
-    /* Execucao */
+    /* Execução */
     strcpy(parques[i].nome, nome);
     parques[i].regimeUmaHora = regimeUmaHora;
     parques[i].regimeHoras = regimeHoras;
@@ -103,7 +104,7 @@ void removeParque(char *nome){
         printf ("%s: no such parking. \n",nome);
     } 
     else {
-        // apaga registo de parque
+        /*Apaga regime do parque */
         strcpy(parques[i].nome, "");
         parques[i].regimeUmaHora = 0.0;
         parques[i].regimeHoras = 0.0;
@@ -112,7 +113,7 @@ void removeParque(char *nome){
         parques[i].lugaresDisponiveis = 0; 
     
 
-        // compacta Parques evita posições indefinidas entre registos de parques 
+        /* Compacta Parques - evitar lugares indefinidos */
         struct Parque parqueEliminado = parques[i];
         i++;
         while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")){
@@ -122,8 +123,8 @@ void removeParque(char *nome){
         parques[i-1] = parqueEliminado;               
     }    
 } 
-
 /* FIM PARQUES*/
+
 
 /*--------------- Funções Base - CMD LINE --------------------*/
 
@@ -150,35 +151,40 @@ char **lerComando (){
     palavrasComando=malloc(MAXPALAVRAS * sizeof(char*));
     for (int i = 0; i < MAXPALAVRAS; i++) palavrasComando[i] = NULL;
         
-    /* Leitura de comando */
+    /* Recebe comando */
     fgets(comando, sizeof(comando), stdin);
    
-    /* Remocao de carater \n */
+    /* Remoção de carater \n */
     if (comando[strlen(comando) - 1] == '\n') comando[strlen(comando) - 1] = '\0';
-    // Extrai palavras
+
+    /* Extração de palavras */
     while ( inicioToken < strlen(comando))
     {
-        // encontra separador
-        while (strchr( separadores, comando[fimToken]) == NULL ) fimToken++;
        
+       /* Procura separador */
+        while (strchr( separadores, comando[fimToken]) == NULL ) 
+            fimToken++;
+       
+
+        /* No caso de aspas */
+        /* Procura segundas aspas */
         if (comando[fimToken] == '"' && aspas==1){
-            // identificadas segundas aspas
-             aspas = 2;           
+            aspas = 2;           
         }
         else if (comando[fimToken] == '"' && aspas==0){
-            //identificadas primeiras aspas
+            /* Identificar primeiras aspas */
             aspas = 1;
             inicioToken=++fimToken;
         }
         else if  (comando[fimToken] != '"' && aspas==1) {
-            // ignorar separador entre aspas
+            /* Ignorar separadores entre aspas*/
             fimToken++;
         } else if (inicioToken==fimToken){
-            // ignora separadores 
+            /* Ignora separadores */
             inicioToken++;
             ++fimToken;
         }
-        // extrai palavra
+        /* Extrai a palavra */
         if (aspas!=1 && inicioToken<fimToken){
            for (int i=0;i<MAXPALAVRA; token[i++] = '\0');
            strncpy(token, comando+(inicioToken), fimToken-inicioToken);
@@ -187,7 +193,7 @@ char **lerComando (){
            iToken++; 
            inicioToken =fimToken;
         }
-        // reset de processamento entre aspas
+        /*Reset no processamento de aspas */
         if (aspas == 2) {
             inicioToken = ++fimToken;
             aspas = 0;
