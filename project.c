@@ -155,8 +155,8 @@ float calculaTarifa(int inicio, int fim, float X1h, float y, float z){
     return tarifa;
  
 }
-/* ------ FIM DATA/HORA ------*/
 
+/* ------ FIM DATA/HORA ------*/
 
 
 /* ----- INÍCIO VEÍCULO ----- */
@@ -221,9 +221,10 @@ struct Parque{
     float regimeDiario;
 };
 
+/* Lista de parques */
 struct Parque parques[MAXPARQUES];
 
-/* Lista parques existentes */
+/* Função que lista parques existentes */
 void listaParques() {
     int i = 0;
    
@@ -320,7 +321,7 @@ void removeParque(char *nome){
         parques[i-1] = parqueEliminado;               
     }    
 } 
-/* ------ FIM PARQUES ------ */
+/* ----------- FIM PARQUES ----------- */
 
 
 /*--------------- Funções Base - CMD LINE --------------------*/
