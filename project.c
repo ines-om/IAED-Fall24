@@ -102,7 +102,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     /* Validar nome do parque */
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), nome )!=0) i++;
     if (strcmp((char *)(parques[i].nome), nome )==0){
-        printf("%s: parking already exists. \n", nome);
+        printf("%s: parking already exists.\n", nome);
         return;
     }
     /* Validar se a capacidade de parques nÃ£o foi excedida*/
@@ -116,7 +116,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     if (capacidade == 0 && capacidadePar[0] != '0') {}// numero não é inteiro ! não é necessário testar
        
     if (capacidade <= 0) {
-        printf("%d: invalid capacity. \n", capacidade);
+        printf("%d: invalid capacity.\n", capacidade);
         return;
     }
 
@@ -129,7 +129,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
 
     /* Validar tarifario */
     if (regimeUmaHora > regimeHoras || regimeHoras > regimeDiario || regimeUmaHora > regimeDiario || regimeUmaHora <= 0 || regimeHoras <= 0 || regimeDiario <=0) {
-        printf("invalid cost. \n");
+        printf("invalid cost.\n");
         return;
     }
     /* Execucao */
@@ -188,7 +188,7 @@ void removeParque(char *nome){
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), nome )!=0) i++;
 
     if (strcmp((char *)(parques[i].nome), nome )!=0){
-        printf ("%s: no such parking. \n",nome);
+        printf ("%s: no such parking.\n",nome);
     } 
     else {
         // apaga registo de parque
@@ -374,7 +374,7 @@ float calculaTarifa(int inicio, int fim, float X1h, float y, float z){
     totalMinutos = fim - inicio;
 
     /* ERRO: Quantidade de tempo inválida */
-    if (totalMinutos< 0) printf(" invalid date. /n");
+    if (totalMinutos< 0) printf(" invalid date.\n");
 
     /* Conversão de minutos para períodos tarifados - Dias, horas após primeira, quartos de hora na primeira hora*/
     else {
@@ -523,12 +523,12 @@ int saidaVeiculo ( char *parque, char * matricula, char *data, char *hora){
     // Verifica se parque esta definido   
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "") && strcmp((char *)(parques[i].nome), parque) ) i++;
     if (strcmp((char *)(parques[i].nome), parque) !=0) {
-        printf ("%s: No such parking. \n", parque);
+        printf ("%s: No such parking.\n", parque);
         retorno =0;
     } 
     // verifica se matricula é aceitavel
     if (retorno !=0 && ValidaMatricula(matricula) != 1) {
-        printf("%s: invalid licence plate. \n", matricula);
+        printf("%s: invalid licence plate.\n", matricula);
         retorno =0;
     }
     // converte data verificando se e valida
@@ -673,7 +673,7 @@ int historicoVeiculo (  char * matricula){
 
     // verifica se matricula é aceitavel
     if (ValidaMatricula(matricula) != 1) {
-        printf("%s: invalid licence plate. \n", matricula);
+        printf("%s: invalid licence plate.\n", matricula);
         retorno =0;
     } else {
 
@@ -726,7 +726,7 @@ void imprimeLinhaAcum( char* data, float* acumulado, struct EntradaSaida *ptr){
     
     if (ptr == NULL) {
         // fim da lista imprimir remanescente 
-        if (*acumulado > 0) printf ("%s %.2f\n", data, *acumulado);
+        if (*acumulado > 0) printf("%s %.2f\n", data, *acumulado);
     } else {
         if(strcmp(data,"")==0){
             /* inicio da lista inicializacao */
@@ -777,7 +777,7 @@ void listaFactParAc(char* parque){
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
 
     if (strcmp((char *)(parques[i].nome), parque )!=0){
-        printf ("%s: no such parking. \n",parque);
+        printf ("%s: no such parking.\n",parque);
     } 
     else  imprimeLinhaAcum( data, &acumulado, parques[i].primeiraSaida);
 }
@@ -798,14 +798,14 @@ void listaFactParDet(char* parque, char* data ){
     while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
 
     if (strcmp((char *)(parques[i].nome), parque )!=0){
-        printf ("%s: no such parking. \n",parque);
+        printf ("%s: no such parking.\n",parque);
     } else {
         
         // converte data verificando se e valida
         unifiedMin = converteDataHora(data, hora) ;
         // verifica se data/hora e superior ao ultimo movimento
         if (unifiedMin == 0 || (unifiedMin > ultimoRegisto)) {
-            printf("invalid date.");
+            printf("invalid date.\n");
         } else imprimeLinhaDet(data, parques[i].primeiraSaida);
     } 
 }
@@ -942,7 +942,7 @@ int main(){
                 }
                 break;
             default:
-                printf("Error.");
+                printf("Error.\n");
                 break;
         }
         limpaComando(entrada);
