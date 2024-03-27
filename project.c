@@ -18,6 +18,55 @@
 #define ANO_GENESIS 2000
 #define MINUTOS_DIA 1440
 
+/* Parques - Variáveis Globais */
+struct Parque {
+    char nome[8192];
+
+    int capacidadeMax;
+    int lugaresDisponiveis;
+
+    float regimeUmaHora;
+    float regimeHoras;
+    float regimeDiario;
+
+    struct Entrada* primeiraEntrada;
+    struct EntradaSaida* primeiraSaida;
+};
+
+
+struct Parque parques[MAXPARQUES];
+
+
+// Data/Hora - Variáveis Globais 
+int ultimoRegisto = 0;
+
+/* Entrada/ Saída - Variáveis Globais */
+struct Entrada {
+    char veiculo[9];
+    
+    char data[11];
+    char hora[6];
+
+    int unifiedMinutos;
+
+    struct Entrada* proxEntrada;
+};
+
+struct EntradaSaida {
+    char veiculo[9];
+    
+    char dataEntrada[11];
+    char horaEntrada[6];
+    int unifiedMinutosEntrada;
+
+    char dataSaida[11];
+    char horaSaida[6];
+    int unifiedMinutosSaida;
+
+    float Custo;
+
+    struct EntradaSaida* proxEntradaSaida;
+};
 
 /*----- INÍCIO DATA/HORA -----*/
 
@@ -209,21 +258,6 @@ int ValidaMatricula ( char *matricula){
 
 /* ----- INÍCIO PARQUES -----*/
 
-/* Estrutura Parque */
-struct Parque{
-    char nome[50];
-
-    int capacidadeMax;
-    int lugaresDisponiveis;
-
-    float regimeUmaHora;
-    float regimeHoras;
-    float regimeDiario;
-};
-
-/* Lista de parques */
-struct Parque parques[MAXPARQUES];
-
 /* Função que lista parques existentes */
 void listaParques() {
     int i = 0;
@@ -258,7 +292,9 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
    
     /* Validar capacidade */
     capacidade = atoi( capacidadePar );
-    if (capacidade == 0 && capacidadePar[0] != '0') // numero não é inteiro ! não é necessário testar
+
+    /* número não é inteiro, não é necessário testar*/
+    if (capacidade == 0 && capacidadePar[0] != '0')
        
     if (capacidade <= 0) {
         printf("%d: invalid capacity. \n", capacidade);
@@ -286,9 +322,6 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     parques[i].regimeDiario = regimeDiario;
     parques[i].capacidadeMax = capacidade;
     parques[i].lugaresDisponiveis = capacidade;
-
-    /* Pos-condicoes */
-
 } 
 
 
@@ -322,6 +355,392 @@ void removeParque(char *nome){
     }    
 } 
 /* ----------- FIM PARQUES ----------- */
+
+/* ---------- INÍCIO ENTRADAS E SAÍDAS -----------*/
+
+/* Entrada de um veiculo no Parque                                  
+|      Parametros:
+|        - parque, veiculo, data, hora     
+|      Retorno: 
+|        - 0: erro | 1: Ok                  */
+
+int entradaVeiculo ( char *parque, char * matricula, char *data, char *hora){
+
+    int retorno =1;
+
+    int unifiedMin = 0;
+    
+    struct Entrada *novaEntrada, *entPtr;
+    
+    /* Pré-condições*/
+    int i = 0, j=0;
+    
+    /* Verifica se parque existe */  
+    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "") && strcmp((char *)(parques[i].nome), parque) ) i++;
+    if (strcmp((char *)(parques[i].nome), parque) !=0) {
+        printf ("%s: No such parking.\n", parque);
+        retorno =0;
+
+    /* Verifica se ainda existem lugares disponíveis */
+    } else if (parques[i].lugaresDisponiveis == 0){
+            printf("%s: parking is full.\n", parque);
+            retorno =0;
+            }
+    /* Verifica se a matrícula é válida */
+    if (retorno !=0 && ValidaMatricula(matricula) != 1) {
+        printf("%s: invalid licence plate.\n", matricula);
+        retorno =0;
+    }
+    
+    /* Converte data e verifica se é válida */
+    unifiedMin = converteDataHora(data, hora) ;
+
+    /* Verifica se data/hora e superior ao ultimo movimento */
+    if (retorno !=0 && (unifiedMin == 0 || (unifiedMin < ultimoRegisto))) {
+        printf("invalid date.\n");
+        retorno =0;
+    }
+    
+    /* Verifica se veículo está noutro parque */
+    j=0;
+    while(j< MAXPARQUES && strcmp((char *)(parques[j].nome), "") && (retorno !=0)){
+        entPtr= parques[j].primeiraEntrada;
+            while ((entPtr != NULL)&& (retorno !=0)) {
+                if (strcmp((char *)(entPtr->veiculo), matricula)==0){
+                    printf("%s: invalid vehicle entry.\n", matricula);
+                    retorno=0;
+                }
+                else {
+                    entPtr = entPtr->proxEntrada;
+                }
+            }
+            j++;
+    }
+
+    /* Execução */
+
+    /* Cria novo registo de entrada */
+    if (retorno == 1) {
+        novaEntrada = malloc(sizeof(struct Entrada));
+        strcpy(novaEntrada->veiculo, matricula);
+    
+        strcpy(novaEntrada->data,data);
+        strcpy(novaEntrada->hora, hora);
+
+        novaEntrada->unifiedMinutos=unifiedMin;
+
+        novaEntrada->proxEntrada= NULL;
+
+        /* insere novo registo na lista ligada e no parque respectivo */
+        if (parques[i].primeiraEntrada == NULL) {
+            parques[i].primeiraEntrada = novaEntrada;
+        }
+        else {
+            entPtr = parques[i].primeiraEntrada;
+            while (entPtr->proxEntrada != NULL) 
+                entPtr = entPtr->proxEntrada;
+            entPtr->proxEntrada =  novaEntrada; 
+        }
+
+        /* actualizar Data/Hora do ultimo movimento */
+        ultimoRegisto = unifiedMin;
+        
+        /* Atualiza oupação do parque */
+        parques[i].lugaresDisponiveis--;
+        printf("%s %d\n",parques[i].nome, parques[i].lugaresDisponiveis  );
+    }
+
+    return retorno;
+}
+
+/* Saída de veículo no parque 
+|       Parametros:
+|       - parque, matricula, data e hora
+|        Retorno:
+|       0: erro | 1: ok                    */
+
+int saidaVeiculo ( char *parque, char * matricula, char *data, char *hora){
+
+    int retorno =1;
+
+    int unifiedMin = 0;
+    
+    struct Entrada *entPtr=NULL, *previoPtr=NULL;
+    struct EntradaSaida *entSaiPtr=NULL, *novaEntSaida=NULL;
+    
+    /* Pré-condições*/
+    int i = 0, encontrei=0;
+
+    /* Verifica se parque existe */ 
+    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "") && strcmp((char *)(parques[i].nome), parque) ) i++;
+    if (strcmp((char *)(parques[i].nome), parque) !=0) {
+        printf ("%s: No such parking. \n", parque);
+        retorno =0;
+    } 
+    
+    /* Verifica se a matrícula é válida */
+    if (retorno !=0 && ValidaMatricula(matricula) != 1) {
+        printf("%s: invalid licence plate. \n", matricula);
+        retorno =0;
+    }
+    
+    /* Converte e verifica validade das horas */
+    unifiedMin = converteDataHora(data, hora) ;
+    
+    /*Verifica data e hora até ao último momento */
+    if (retorno !=0 && unifiedMin == 0 || (unifiedMin < ultimoRegisto)) {
+        printf("invalid date.\n");
+        retorno =0;
+    }
+
+    /* Verifica se veículo está no parque*/
+    entPtr= parques[i].primeiraEntrada;
+    while (retorno !=0 && (entPtr != NULL)&& (encontrei ==0)) {
+        if (strcmp((char *)(entPtr->veiculo), matricula)==0){
+            encontrei=1;
+        }
+        else {
+            previoPtr = entPtr;
+            entPtr = entPtr->proxEntrada;
+            }
+    } 
+    if (retorno !=0 && encontrei ==0) {
+        printf("%s: invalid vehicle exit.\n", matricula);
+        retorno = 0;
+    }  
+
+
+    /* Execução */
+
+    /* Novo registo */
+    if (retorno == 1) {
+        novaEntSaida = malloc(sizeof(struct EntradaSaida));
+        strcpy(novaEntSaida->veiculo, matricula);
+
+        strcpy(novaEntSaida->dataEntrada,entPtr->data);
+        strcpy(novaEntSaida->horaEntrada,entPtr->hora);
+
+        novaEntSaida->unifiedMinutosEntrada=entPtr->unifiedMinutos;
+    
+        strcpy(novaEntSaida->dataSaida ,data);
+        strcpy(novaEntSaida->horaSaida, hora);
+        novaEntSaida->unifiedMinutosSaida=unifiedMin;
+
+        novaEntSaida->Custo = calculaTarifa(novaEntSaida->unifiedMinutosEntrada,novaEntSaida->unifiedMinutosSaida, parques[i].regimeUmaHora,parques[i].regimeHoras, parques[i].regimeDiario);
+
+        novaEntSaida->proxEntradaSaida= NULL;
+
+        /* Imprime resultado */
+        printf("%s %s %s %s %s %.2f\n", matricula, novaEntSaida->dataEntrada, novaEntSaida->horaEntrada, novaEntSaida->dataSaida, novaEntSaida->horaSaida, novaEntSaida->Custo );
+  
+        /* Insere novo registo */
+        if (parques[i].primeiraSaida == NULL) {
+            parques[i].primeiraSaida = novaEntSaida;
+        }
+        else {
+            entSaiPtr = parques[i].primeiraSaida;
+            while (entSaiPtr->proxEntradaSaida != NULL) 
+                entSaiPtr = entSaiPtr->proxEntradaSaida;
+            entSaiPtr->proxEntradaSaida =  novaEntSaida; 
+        }
+
+        /* Elimina registo correspondente */
+        if (previoPtr == NULL){
+            parques[i].primeiraEntrada = entPtr->proxEntrada;
+        }
+        else {
+            previoPtr->proxEntrada = entPtr->proxEntrada;
+        }
+   
+        /* Atualização de Data/Hora */
+        ultimoRegisto = unifiedMin;
+        
+        /* Atualização de lugares disponíveis */
+        parques[i].lugaresDisponiveis++;
+        
+        /* Liberta memória alocada */
+        free(entPtr);
+    }
+
+    return retorno;
+
+}
+
+
+/* Imprime veiculos que entraram e sairam  
+|    Retorno:
+|    - 0: erro | 1: ok                        */
+
+int imprimeLinhaVeiculoES (char * parque, char * matricula, struct EntradaSaida *entSaiPtr, int linhas){
+    int ret=linhas;
+
+    if (entSaiPtr != NULL){
+       if (strcmp(entSaiPtr->veiculo, matricula)== 0){
+            ret++;
+            printf("%s %s %s %s %s\n", parque, entSaiPtr->dataEntrada, entSaiPtr->horaEntrada, entSaiPtr->dataSaida, entSaiPtr->horaSaida);
+       }
+       ret = imprimeLinhaVeiculoES(parque, matricula, entSaiPtr->proxEntradaSaida, ret);
+    }
+    return ret;
+}
+
+
+/* Imprime veiculos que entraram no       
+|       Retorno: 
+|        - 0-erro | 1-Ok                 */
+
+int imprimeLinhaVeiculoE (char * parque, char * matricula, struct Entrada *entPtr, int linhas){
+    int ret=linhas;
+    if (entPtr != NULL){
+       if (strcmp(entPtr->veiculo, matricula)== 0){
+            ret++;
+            printf("%s %s %s\n", parque, entPtr->data, entPtr->hora);
+       }
+       ret = imprimeLinhaVeiculoE(parque, matricula, entPtr->proxEntrada, ret);
+    }
+    return ret;
+}
+
+
+/* | Historico de veiculo nos Parques       
+|       Retorno: 
+|        - 0-erro | 1-Ok                 */
+
+
+int historicoVeiculo (  char * matricula){
+
+    int retorno =1;
+    
+    struct Parque *parquesOrdenados[MAXPARQUES], *temParq;
+    int totalParques=0, i=0, j=0;
+    int linhas=0;
+
+    /* pre-condicoes*/
+
+    /* Vê se matrícula é válida */
+    if (ValidaMatricula(matricula) != 1) {
+        printf("%s: invalid licence plate. \n", matricula);
+        retorno =0;
+    } else {
+
+        /* Ordenação dos parques */
+
+        /* Inicialização de estrutura temporária */
+        while (totalParques< MAXPARQUES && strcmp((char *)(parques[totalParques].nome), "")){
+            parquesOrdenados[totalParques] = &parques[totalParques];
+            totalParques++;
+        }
+
+        /* Ordena estrutura temporaria */
+        for (i = 0; i < totalParques; ++i)  {
+            for (j = i + 1; j < totalParques; ++j) {
+                if (strcmp(parquesOrdenados[i]->nome,parquesOrdenados[j]->nome)>0) {
+                    temParq =  parquesOrdenados[i];
+                    parquesOrdenados[i] = parquesOrdenados[j];
+                    parquesOrdenados[j] = temParq;
+                }
+            }
+        }    
+
+        for (i = 0; i < totalParques; ++i)  {
+            linhas = imprimeLinhaVeiculoES(parquesOrdenados[i]->nome, matricula, parquesOrdenados[i]->primeiraSaida,linhas);
+            linhas = imprimeLinhaVeiculoE(parquesOrdenados[i]->nome, matricula, parquesOrdenados[i]->primeiraEntrada,linhas);
+        } 
+
+        /* não ha registos do veiculo */
+        if (linhas ==0) {
+            printf("%s: no entries found in any parking.\n", matricula);
+            retorno =0;
+        }       
+    }
+    return retorno;
+}
+
+/* -------------- FIM ENTRADAS/SAÍDAS --------------------------------- */
+
+
+
+/* ----------- Inicio Facturação ----------------------------------- */
+
+/*  Facturação acumulada do Parque  */
+void imprimeLinhaAcum( char* data, float* acumulado, struct EntradaSaida *ptr){
+    
+    if (ptr == NULL) {
+        /* fim da lista imprimir remanescente */
+        if (*acumulado > 0) printf ("%s %.2f\n", data, *acumulado);
+    } else {
+        if(strcmp(data,"")==0){
+            /* inicio da lista inicializacao */
+            strcpy(data, ptr->dataSaida);
+            *acumulado = ptr->Custo;
+        } else if (strcmp(data, ptr->dataSaida)<0){
+                /*  Troca data */
+                printf ("%s %.2f\n", data, *acumulado);
+                strcpy(data, ptr->dataSaida);
+                *acumulado = ptr->Custo;
+            } else {
+            *acumulado += ptr->Custo;
+             }
+       imprimeLinhaAcum( data, acumulado, ptr->proxEntradaSaida);
+    }
+}
+
+
+/* Facturação Detalhada do Parque */
+void imprimeLinhaDet( char* data, struct EntradaSaida *ptr){
+    
+    if (ptr != NULL) {
+        if (strcmp(data, ptr->dataSaida)==0){
+            printf ("%s %s %.2f\n", ptr->veiculo, ptr->horaSaida, ptr->Custo);
+        }
+        imprimeLinhaDet(data, ptr->proxEntradaSaida);
+    }    
+}
+
+
+/* Facturação acumulada do Parque */
+
+void listaFactParAc(char* parque){
+
+    int i = 0;
+    float acumulado=0.0;
+    char data[11] = ""; 
+        
+    
+    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
+
+    if (strcmp((char *)(parques[i].nome), parque )!=0){
+        printf ("%s: no such parking. \n",parque);
+    } 
+    else  imprimeLinhaAcum( data, &acumulado, parques[i].primeiraSaida);
+}
+
+
+/* Facturação detalhada do Parque  */                            
+
+void listaFactParDet(char* parque, char* data ){
+
+    int i=0;
+    int unifiedMin=0;
+    char hora[5]="00:00";
+
+    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
+
+    if (strcmp((char *)(parques[i].nome), parque )!=0){
+        printf ("%s: no such parking. \n",parque);
+    } else {
+        
+        /* Converte data e verifica se é válida */
+        unifiedMin = converteDataHora(data, hora);
+
+        /* verifica se data/hora e superior ao ultimo movimento */
+        if (unifiedMin == 0 || (unifiedMin > ultimoRegisto)) {
+            printf("invalid date.");
+        } else imprimeLinhaDet(data, parques[i].primeiraSaida);
+    } 
+}
+
+/* ---------- FIM FATURAÇÃO -----------------*/
 
 
 /*--------------- Funções Base - CMD LINE --------------------*/
@@ -403,8 +822,9 @@ char **lerComando (){
 }
 
 /* Função para libertar memória alocada */
-void limpaComando(char **lista){
-    for (int i = 0; i < sizeof(lista); i++) free(lista[i]);
+void limpaComando(char **lista){    
+    for (int i = 0; i < sizeof(lista); i++) 
+        free(lista[i]);
     free(lista);
     lista = NULL;
 }
@@ -413,7 +833,6 @@ int main(){
 
     char **entrada;
     char operacao;
-    
 
     do {
         entrada = lerComando();
@@ -424,20 +843,37 @@ int main(){
                 break;
             case 'p':
                 if (entrada[1] == NULL){
-                    //listarParques(Parques);
                     listaParques();
                 }
                 else{
-                    // criarParque(Parques, componentesComando[1], atoi(componentesComando[2]), atof(componentesComando[3]), atof(componentesComando[4]), atof(componentesComando[5]));
                     criaParque(entrada[1],entrada[2],entrada[3],entrada[4],entrada[5]);
                 }
                 break;
             case 'r':
-                // remove 1 parque
                 removeParque(entrada[1]);
                 break;
+
+            case 'e':
+                entradaVeiculo( entrada[1],entrada[2],entrada[3],entrada[4]);
+                break;
+            case 's':
+                saidaVeiculo( entrada[1],entrada[2],entrada[3],entrada[4]);
+                break;
+            case 'v':
+                historicoVeiculo( entrada[1]);
+                break;
+            case 'f':
+                if (entrada[2] == NULL){
+                    /* Lista faturação do dia */
+                    listaFactParAc(entrada[1]);
+                }
+                else{
+                    /* Lista faturação detalhada */
+                    listaFactParDet(entrada[1],entrada[2]);
+                }
+                break;
             default:
-                printf("erro");
+                printf("Error.");
                 break;
         }
         limpaComando(entrada);
