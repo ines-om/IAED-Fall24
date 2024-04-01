@@ -42,7 +42,7 @@ struct EntradaSaida {
 
 /* Parques - Variáveis Globais */ 
 struct Parque{
-    char nome[8192];
+    char* nome;
 
     int capacidadeMax;
     int lugaresDisponiveis;
@@ -72,8 +72,9 @@ int ultimoRegisto = 0;
 /* +----------------------------------------+ */
 void listaParques() {
     int i = 0;
-   
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")) {
+
+
+    while(i< MAXPARQUES && parques[i].nome!=NULL) {
         printf("%s %d %d\n", (char *)(parques[i].nome), parques[i].capacidadeMax, parques[i].lugaresDisponiveis);
         i++;
     }
@@ -98,10 +99,10 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     float regimeDiario=0;
 
     /* Pre-condições */
-
+ 
     /* Validar nome do parque */
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), nome )!=0) i++;
-    if (strcmp((char *)(parques[i].nome), nome )==0){
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), nome )!=0) i++;
+    if (parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), nome )==0){
         printf("%s: parking already exists.\n", nome);
         return;
     }
@@ -110,16 +111,16 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
         printf("too many parks.\n");
         return;
     }
-   
+  
     /* Validar capacidade */
-    capacidade = atoi( capacidadePar );
+    capacidade = atoi(capacidadePar);
     if (capacidade == 0 && capacidadePar[0] != '0') {}// numero não é inteiro ! não é necessário testar
        
     if (capacidade <= 0) {
         printf("%d: invalid capacity.\n", capacidade);
         return;
     }
-
+   
      /* Validar regimeUmaHora */
     regimeUmaHora=atof(regimeUmaHoraPar);
     /* Validar regimeHoras */
@@ -133,8 +134,10 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
         return;
     }
     /* Execucao */
-
+    parques[i].nome = malloc(sizeof(char)*strlen(nome)+1);
+  
     strcpy(parques[i].nome, nome);
+
     parques[i].regimeUmaHora = regimeUmaHora;
     parques[i].regimeHoras = regimeHoras;
     parques[i].regimeDiario = regimeDiario;
@@ -142,7 +145,7 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
     parques[i].lugaresDisponiveis = capacidade;
     parques[i].primeiraEntrada =NULL;
     parques[i].primeiraSaida = NULL;
-
+ 
 } 
 
 /* +----------------------------------------+ */
@@ -155,8 +158,10 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
  
  void apagaListaE (struct Entrada* nodo){
 
-    if (nodo !=NULL) apagaListaE(nodo->proxEntrada);
-    free(nodo);
+    if (nodo !=NULL) {
+        apagaListaE(nodo->proxEntrada);
+        free(nodo); 
+    }
  }
 
 /* +----------------------------------------+ */
@@ -168,15 +173,16 @@ void criaParque(char *nome, char *capacidadePar, char *regimeUmaHoraPar, char *r
 /* +----------------------------------------+ */
  void apagaListaES (struct EntradaSaida* nodo){
 
-    if (nodo !=NULL) apagaListaES(nodo->proxEntradaSaida);
-    free(nodo);
+    if (nodo !=NULL) {
+        apagaListaES(nodo->proxEntradaSaida);
+        free(nodo);
+    }
  }
 
 /* +----------------------------------------+ */
 /* | remove um parque na lista de           | */
 /* |  parques                               | */
-/* | param: lista de parques                | */
-/* |      : nome do parque                  | */
+/* | param: nome do parque                  | */
 /* | retorno:                               | */
 /* +----------------------------------------+ */
 void removeParque(char *nome){
@@ -185,14 +191,16 @@ void removeParque(char *nome){
     int totalParques=0, i=0, j=0;
 
     
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), nome )!=0) i++;
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), nome )!=0) i++;
 
-    if (strcmp((char *)(parques[i].nome), nome )!=0){
+    if ((i == MAXPARQUES) || parques[i].nome==NULL || (strcmp((char *)(parques[i].nome), nome )!=0)){
         printf ("%s: no such parking.\n",nome);
     } 
     else {
         // apaga registo de parque
-        strcpy(parques[i].nome, "");
+
+        free(parques[i].nome);
+        parques[i].nome=NULL;
         parques[i].regimeUmaHora = 0.0;
         parques[i].regimeHoras = 0.0;
         parques[i].regimeDiario = 0.0;
@@ -205,7 +213,7 @@ void removeParque(char *nome){
         // compacta Parques evita posições indefinidas entre registos de parques 
         struct Parque parqueEliminado = parques[i];
         i++;
-        while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")){
+        while((i< MAXPARQUES) && parques[i].nome!=NULL){
             parques[i-1]=parques[i];
             i++;
         }
@@ -213,7 +221,7 @@ void removeParque(char *nome){
 
         /* Ordenação dos Parques */
         /* inicialização de estrutura temporária */
-        while (totalParques< MAXPARQUES && strcmp((char *)(parques[totalParques].nome), "")){
+        while ((totalParques< MAXPARQUES) && (parques[totalParques].nome!=NULL)){
             parquesOrdenados[totalParques] = &parques[totalParques];
             totalParques++;
         }
@@ -235,7 +243,7 @@ void removeParque(char *nome){
     }    
 } 
 
-/* ------- FIM PARQUES ---------------*/
+/* ----------- FIM PARQUES ---------------*/
 
 
 /* -------------------- INICIO ENTRADAS/SAIDAS -------------------- */
@@ -374,7 +382,7 @@ float calculaTarifa(int inicio, int fim, float X1h, float y, float z){
     totalMinutos = fim - inicio;
 
     /* ERRO: Quantidade de tempo inválida */
-    if (totalMinutos< 0) printf(" invalid date.\n");
+    if (totalMinutos< 0) printf("invalid date.\n");
 
     /* Conversão de minutos para períodos tarifados - Dias, horas após primeira, quartos de hora na primeira hora*/
     else {
@@ -423,7 +431,7 @@ float calculaTarifa(int inicio, int fim, float X1h, float y, float z){
 /* +----------------------------------------+ */
 int entradaVeiculo ( char *parque, char * matricula, char *data, char *hora){
 
-    int retorno =1;
+    int retorno = 1;
 
     int unifiedMin = 0;
     
@@ -431,14 +439,14 @@ int entradaVeiculo ( char *parque, char * matricula, char *data, char *hora){
     // pre condicoes 
     int i = 0, j=0;
     // Verifica se parque esta definido   
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "") && strcmp((char *)(parques[i].nome), parque) ) i++;
-    if (strcmp((char *)(parques[i].nome), parque) !=0) {
-        printf ("%s: No such parking.\n", parque);
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), parque) ) i++;
+    if (parques[i].nome==NULL || strcmp((char *)(parques[i].nome), parque) !=0) {
+        printf ("%s: no such parking.\n", parque);
         retorno =0;
     } else if (parques[i].lugaresDisponiveis == 0){
             // verifica se ainda existem lugares disponiveis no parque
             printf("%s: parking is full.\n", parque);
-            retorno =0;
+            retorno = 0;
             }
     // verifica se matricula é aceitavel
     if (retorno !=0 && ValidaMatricula(matricula) != 1) {
@@ -454,9 +462,9 @@ int entradaVeiculo ( char *parque, char * matricula, char *data, char *hora){
     }
     // verifica se veiculo está em algum parque
     j=0;
-    while(j< MAXPARQUES && strcmp((char *)(parques[j].nome), "") && (retorno !=0)){
+    while(j < MAXPARQUES && parques[j].nome!=NULL && (retorno !=0)){
         entPtr= parques[j].primeiraEntrada;
-            while ((entPtr != NULL)&& (retorno !=0)) {
+            while ((entPtr != NULL) && (retorno !=0)) {
                 if (strcmp((char *)(entPtr->veiculo), matricula)==0){
                     printf("%s: invalid vehicle entry.\n", matricula);
                     retorno=0;
@@ -518,11 +526,12 @@ int saidaVeiculo ( char *parque, char * matricula, char *data, char *hora){
     
     struct Entrada *entPtr=NULL, *previoPtr=NULL;
     struct EntradaSaida *entSaiPtr=NULL, *novaEntSaida=NULL;
+
     // pre condicoes 
     int i = 0, encontrei=0;
     // Verifica se parque esta definido   
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "") && strcmp((char *)(parques[i].nome), parque) ) i++;
-    if (strcmp((char *)(parques[i].nome), parque) !=0) {
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), parque) ) i++;
+    if (parques[i].nome==NULL || strcmp((char *)(parques[i].nome), parque) !=0) {
         printf ("%s: No such parking.\n", parque);
         retorno =0;
     } 
@@ -534,20 +543,20 @@ int saidaVeiculo ( char *parque, char * matricula, char *data, char *hora){
     // converte data verificando se e valida
     unifiedMin = converteDataHora(data, hora) ;
     // verifica se data/hora e superior ao ulktimo movimento
-    if (retorno !=0 && unifiedMin == 0 || (unifiedMin < ultimoRegisto)) {
+    if (retorno !=0 && (unifiedMin == 0 || (unifiedMin < ultimoRegisto))) {
         printf("invalid date.\n");
         retorno =0;
     }
     // verifica se veiculo está no parque
     entPtr= parques[i].primeiraEntrada;
     while (retorno !=0 && (entPtr != NULL)&& (encontrei ==0)) {
-        if (strcmp((char *)(entPtr->veiculo), matricula)==0){
+        if (strcmp((char *)(entPtr->veiculo), matricula)==0) {
             encontrei=1;
         }
         else {
             previoPtr = entPtr;
             entPtr = entPtr->proxEntrada;
-            }
+        }
     } 
     if (retorno !=0 && encontrei ==0) {
         printf("%s: invalid vehicle exit.\n", matricula);
@@ -680,7 +689,7 @@ int historicoVeiculo (  char * matricula){
         // Ordena Parques
 
         // inicializa estrutura temporaria
-        while (totalParques< MAXPARQUES && strcmp((char *)(parques[totalParques].nome), "")){
+        while (totalParques< MAXPARQUES && parques[totalParques].nome!=NULL){
             parquesOrdenados[totalParques] = &parques[totalParques];
             totalParques++;
         }
@@ -774,9 +783,9 @@ void listaFactParAc(char* parque){
     char data[11] = ""; 
         
     
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), parque )!=0) i++;
 
-    if (strcmp((char *)(parques[i].nome), parque )!=0){
+    if (parques[i].nome==NULL || strcmp((char *)(parques[i].nome), parque )!=0){
         printf ("%s: no such parking.\n",parque);
     } 
     else  imprimeLinhaAcum( data, &acumulado, parques[i].primeiraSaida);
@@ -795,9 +804,9 @@ void listaFactParDet(char* parque, char* data ){
     int unifiedMin=0;
     char hora[5]="00:00";
 
-    while(i< MAXPARQUES && strcmp((char *)(parques[i].nome), "")!=0 && strcmp((char *)(parques[i].nome), parque )!=0) i++;
+    while(i< MAXPARQUES && parques[i].nome!=NULL && strcmp((char *)(parques[i].nome), parque )!=0) i++;
 
-    if (strcmp((char *)(parques[i].nome), parque )!=0){
+    if (parques[i].nome==NULL || strcmp((char *)(parques[i].nome), parque )!=0){
         printf ("%s: no such parking.\n",parque);
     } else {
         
@@ -829,8 +838,7 @@ char **lerComando (){
     const char separadores[10] = " \t\"";
   
     char comando[MAXCOMANDO];
-    char token[MAXPALAVRA] ="";
-    char *restoComando;
+    char token[MAXPALAVRA] = "";
     int iToken =0;
     int inicioToken=0;
     int fimToken=0;
@@ -838,19 +846,21 @@ char **lerComando (){
 
     /*Aloca espaço e inicializa*/
     char **palavrasComando;
-    palavrasComando=malloc(MAXPALAVRAS * sizeof(char*));
+
+    palavrasComando = malloc(MAXPALAVRAS * sizeof(char*));
     for (int i = 0; i < MAXPALAVRAS; i++) palavrasComando[i] = NULL;
         
     /* Leitura de comando */
     fgets(comando, sizeof(comando), stdin);
-   
+
     /* Remocao de carater \n */
     if (comando[strlen(comando) - 1] == '\n') comando[strlen(comando) - 1] = '\0';
+
     // Extrai palavras
-    while ( inicioToken < strlen(comando))
-    {
+    while ( inicioToken < (int)strlen(comando)) {
+
         // encontra separador
-        while (strchr( separadores, comando[fimToken]) == NULL ) fimToken++;
+        while (strchr(separadores, comando[fimToken]) == NULL ) fimToken++;
        
         if (comando[fimToken] == '"' && aspas==1){
             // identificadas segundas aspas
@@ -872,7 +882,9 @@ char **lerComando (){
         // extrai palavra
         if (aspas!=1 && inicioToken<fimToken){
            for (int i=0;i<MAXPALAVRA; token[i++] = '\0');
+
            strncpy(token, comando+(inicioToken), fimToken-inicioToken);
+
            palavrasComando[iToken] = malloc((int)strlen(token) + 1); 
            strcpy(palavrasComando[iToken],token);
            iToken++; 
@@ -894,7 +906,8 @@ char **lerComando (){
 /* | param: apontador para comando          | */
 /* | retorno:                               | */
 /* +----------------------------------------+ */
-void limpaComando(char **lista){    for (int i = 0; i < sizeof(lista); i++) free(lista[i]);
+void limpaComando(char **lista){    
+    for (int i = 0; i < (int)sizeof(lista); i++) free(lista[i]);
     free(lista);
     lista = NULL;
 }
